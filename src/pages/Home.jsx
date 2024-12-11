@@ -15,13 +15,34 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const fetchWithRetry = async (url, options, maxRetries = 3) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, {
+        ...options,
+        redirect: "follow", // Explicitly follow redirects
+      });
+
       if (response.ok) {
         return await response.json();
       }
+
+      // Handle redirects manually if needed
+      if (
+        response.status === 301 ||
+        response.status === 302 ||
+        response.status === 307
+      ) {
+        const redirectUrl = response.headers.get("Location");
+        if (redirectUrl) {
+          const redirectResponse = await fetch(redirectUrl, options);
+          if (redirectResponse.ok) {
+            return await redirectResponse.json();
+          }
+        }
+      }
+
       if (response.status === 401) {
         throw new Error("Authentication failed");
       }
+
       if (attempt < maxRetries) {
         await delay(1000);
         continue;
@@ -38,7 +59,7 @@ const formatResponseData = (data) => {
   const formatted = {};
   if (data.messages) {
     Object.entries(data.messages).forEach(([version, messages]) => {
-      formatted[version] = messages.map((msg) => msg.key);
+      formatted[version] = messages.map((msg) => msg.content.key);
     });
   }
   return formatted;
