@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import PublicationTable from "@/components/PublicationTable";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Upload } from "lucide-react";
 
 // Add these utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,6 +74,7 @@ function Home() {
   const [version, setVersion] = useState(1);
   const [apiResponse, setApiResponse] = useState(null);
   const [generatedUrl, setGeneratedUrl] = useState("");
+  const [isLocalMode, setIsLocalMode] = useState(false);
 
   const handleGetRequest = async () => {
     const url = `http://xtrader.cibc.com:10499/api/trade-publication/publication-message/${positionId}?api-version=${version}`;
@@ -97,36 +101,72 @@ function Home() {
     }
   };
 
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        setApiResponse(json);
+      } catch (error) {
+        setApiResponse({ error: "Invalid JSON file" });
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Trade Publication Viewer</h1>
-
-      <div className="flex gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Enter Position ID"
-          value={positionId}
-          onChange={(e) => setPositionId(e.target.value)}
-        />
-        <Select onValueChange={(value) => setVersion(parseInt(value))}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Version" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">v1</SelectItem>
-            <SelectItem value="2">v2</SelectItem>
-            <SelectItem value="3">v3</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={handleGetRequest}>GET</Button>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Trade Publication Viewer</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="local-mode"
+              checked={isLocalMode}
+              onCheckedChange={setIsLocalMode}
+            />
+            <Label htmlFor="local-mode">Local Mode</Label>
+          </div>
+          {isLocalMode && (
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleFileUpload}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+            />
+          )}
+        </div>
       </div>
 
-      <input
-        type="text"
-        className="w-full mb-4 p-2 border rounded-md"
-        value={generatedUrl}
-        onChange={(e) => setGeneratedUrl(e.target.value)}
-      />
+      {!isLocalMode && (
+        <>
+          <div className="flex gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Enter Position ID"
+              value={positionId}
+              onChange={(e) => setPositionId(e.target.value)}
+            />
+            <Select onValueChange={(value) => setVersion(parseInt(value))}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Version" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">v1</SelectItem>
+                <SelectItem value="2">v2</SelectItem>
+                <SelectItem value="3">v3</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleGetRequest}>GET</Button>
+          </div>
+          <input
+            type="text"
+            className="w-full mb-4 p-2 border rounded-md"
+            value={generatedUrl}
+            onChange={(e) => setGeneratedUrl(e.target.value)}
+          />
+        </>
+      )}
 
       {apiResponse && !apiResponse.error && (
         <div className="mt-4 overflow-hidden">

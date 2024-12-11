@@ -1,3 +1,8 @@
+import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -31,8 +36,7 @@ const formatLifeCycleEvents = (events) => {
 };
 
 const PublicationTable = ({ data }) => {
-  // Sort messages by timestamp
-  const sortedMessages = Object.entries(data.messages)
+  const sortedMessages = Object.entries(data?.messages || {})
     .flatMap(([_, msgs]) => msgs.map((msg) => msg.content))
     .sort(
       (a, b) =>
@@ -44,13 +48,13 @@ const PublicationTable = ({ data }) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Alias</TableHead>
-            <TableHead>Version</TableHead>
-            <TableHead>Business Event</TableHead>
-            <TableHead>Lifecycle Events</TableHead>
-            <TableHead>Key</TableHead>
-            <TableHead>Timestamp</TableHead>
-            <TableHead>Δt</TableHead>
+            <TableHead className="w-[50px]">Alias</TableHead>
+            <TableHead className="w-[80px]">Version</TableHead>
+            <TableHead className="w-[200px]">Business Event</TableHead>
+            <TableHead className="w-[250px]">Lifecycle Events</TableHead>
+            <TableHead className="w-[300px]">Key</TableHead>
+            <TableHead className="w-[200px]">Timestamp</TableHead>
+            <TableHead className="w-[100px]">Δt</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -60,13 +64,20 @@ const PublicationTable = ({ data }) => {
                 {generateAlias(idx)}
               </TableCell>
               <TableCell>{msg.position.version}</TableCell>
-              <TableCell>{msg.eventDetails.businessEvent.type}</TableCell>
-              <TableCell className="max-w-md truncate">
+              <TableCell className="whitespace-normal break-words">
+                {msg.eventDetails.businessEvent.type}
+              </TableCell>
+              <TableCell className="whitespace-normal break-words">
                 {formatLifeCycleEvents(msg.eventDetails.lifeCycleEvents)}
               </TableCell>
-              <TableCell className="font-mono text-sm">{msg.key}</TableCell>
-              <TableCell>
-                {format(new Date(msg.messageTimestampUTC), "HH:mm:ss.SSS")}
+              <TableCell className="font-mono text-sm whitespace-normal break-words">
+                {msg.key}
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                {format(
+                  new Date(msg.messageTimestampUTC),
+                  "yyyy-MM-dd HH:mm:ss.SSS"
+                )}
               </TableCell>
               <TableCell>
                 {formatTimeDifference(
