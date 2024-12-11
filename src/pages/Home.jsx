@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import PublicationTable from "@/components/PublicationTable";
 
 // Add these utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -128,20 +129,9 @@ function Home() {
       />
 
       {apiResponse && !apiResponse.error && (
-        <div className="mt-4">
-          <h2 className="font-semibold">GUIDs by Version:</h2>
-          <div className="p-4 border rounded-md bg-gray-100 h-[300px] w-full overflow-auto">
-            {Object.entries(apiResponse).map(([version, guids]) => (
-              <div key={version} className="mb-4">
-                <h3 className="font-medium">Version {version}:</h3>
-                <ul className="list-disc pl-6">
-                  {guids.map((guid) => (
-                    <li key={guid}>{guid}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+        <div className="mt-4 overflow-hidden">
+          <h2 className="font-semibold mb-4">Publication Messages:</h2>
+          <PublicationTable data={apiResponse} />
         </div>
       )}
 
