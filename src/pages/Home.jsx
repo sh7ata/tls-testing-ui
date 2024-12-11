@@ -20,16 +20,31 @@ function Home() {
     setGeneratedUrl(url);
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include", // This enables Kerberos authentication
+        headers: {
+          Accept: "application/json",
+          Authorization: "Negotiate", // Indicates we want to use Kerberos
+        },
+      });
+
       if (response.ok) {
         const data = await response.json();
         setApiResponse(data);
+      } else if (response.status === 401) {
+        setApiResponse({
+          error:
+            "Authentication failed - Please ensure you're logged into your domain",
+        });
       } else {
-        setApiResponse({ error: "Failed to fetch data" });
+        setApiResponse({
+          error: `Failed to fetch data: ${response.status} ${response.statusText}`,
+        });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      setApiResponse({ error: "An error occurred" });
+      setApiResponse({ error: `Network error: ${error.message}` });
     }
   };
 
