@@ -9,6 +9,41 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
+// Add these utility functions
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url, options, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) {
+        return await response.json();
+      }
+      if (response.status === 401) {
+        throw new Error("Authentication failed");
+      }
+      if (attempt < maxRetries) {
+        await delay(1000);
+        continue;
+      }
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      await delay(1000);
+    }
+  }
+  throw new Error(`Failed after ${maxRetries} attempts`);
+};
+
+const formatResponseData = (data) => {
+  const formatted = {};
+  if (data.messages) {
+    Object.entries(data.messages).forEach(([version, messages]) => {
+      formatted[version] = messages.map((msg) => msg.key);
+    });
+  }
+  return formatted;
+};
+
 function Home() {
   const [positionId, setPositionId] = useState("");
   const [version, setVersion] = useState(1);
@@ -20,31 +55,23 @@ function Home() {
     setGeneratedUrl(url);
 
     try {
-      const response = await fetch(url, {
+      const data = await fetchWithRetry(url, {
         method: "GET",
-        credentials: "include", // This enables Kerberos authentication
+        credentials: "include",
         headers: {
           Accept: "application/json",
-          Authorization: "Negotiate", // Indicates we want to use Kerberos
+          Authorization: "Negotiate",
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setApiResponse(data);
-      } else if (response.status === 401) {
-        setApiResponse({
-          error:
-            "Authentication failed - Please ensure you're logged into your domain",
-        });
-      } else {
-        setApiResponse({
-          error: `Failed to fetch data: ${response.status} ${response.statusText}`,
-        });
-      }
+      // Store full response in localStorage
+      localStorage.setItem(`response_${positionId}`, JSON.stringify(data));
+
+      // Format and set displayed response
+      setApiResponse(formatResponseData(data));
     } catch (error) {
       console.error("Error fetching data:", error);
-      setApiResponse({ error: `Network error: ${error.message}` });
+      setApiResponse({ error: error.message });
     }
   };
 
@@ -79,12 +106,27 @@ function Home() {
         onChange={(e) => setGeneratedUrl(e.target.value)}
       />
 
-      {apiResponse && (
+      {apiResponse && !apiResponse.error && (
         <div className="mt-4">
-          <h2 className="font-semibold">API Response:</h2>
-          <pre className="p-4 border rounded-md bg-gray-100 h-[300px] w-full overflow-auto">
-            {JSON.stringify(apiResponse, null, 2)}
-          </pre>
+          <h2 className="font-semibold">GUIDs by Version:</h2>
+          <div className="p-4 border rounded-md bg-gray-100 h-[300px] w-full overflow-auto">
+            {Object.entries(apiResponse).map(([version, guids]) => (
+              <div key={version} className="mb-4">
+                <h3 className="font-medium">Version {version}:</h3>
+                <ul className="list-disc pl-6">
+                  {guids.map((guid) => (
+                    <li key={guid}>{guid}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {apiResponse?.error && (
+        <div className="mt-4 p-4 border rounded-md bg-red-100 text-red-700">
+          {apiResponse.error}
         </div>
       )}
     </div>
